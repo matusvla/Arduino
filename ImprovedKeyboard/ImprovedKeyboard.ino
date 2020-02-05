@@ -23,10 +23,10 @@ class button {
   private:
     int triggerState;
   public:
-    int pin, key, state, prevState;
+    int pin, key, state, prevState, delay;
     unsigned long changeTime;
     explicit button(int pin, int key, int triggerState):
-      pin(pin), key(key), state(HIGH), prevState(HIGH), triggerState(triggerState), changeTime(millis()) {
+      pin(pin), key(key), state(HIGH), prevState(HIGH), triggerState(triggerState), changeTime(millis()), delay(100) {
       pinMode(pin, INPUT_PULLUP);
     }
     bool shouldTrigger() {
@@ -52,6 +52,8 @@ class micMuteButton: public button {
       Keyboard.press(KEY_LEFT_GUI);
       Keyboard.press(KEY_F4);
       Keyboard.releaseAll();
+      int ledState = digitalRead(LED_BUILTIN);
+      digitalWrite(LED_BUILTIN, !ledState);
     }
 };
 
@@ -69,6 +71,9 @@ void setup() {
   allButtons[2] = new mediaButton(PLAY_PIN, MEDIA_PLAY_PAUSE, LOW);
   allButtons[3] = new mediaButton(MUTE_PIN, MEDIA_VOL_MUTE, LOW);
   allButtons[4] = new micMuteButton(MICM_PIN, MEDIA_VOL_MUTE, ALL_STATES);
+  allButtons[4]->delay = 300; // short click switches the mike for good
+  
+  digitalWrite(LED_BUILTIN, LOW);
 
   // Sends a clean report to the host. This is important on any Arduino type.
   Consumer.begin();
@@ -100,7 +105,7 @@ void loop() {
   for (int i = 0; i < BUTTON_NO; i++) {
     allButtons[i]->state = digitalRead(allButtons[i]->pin);
     // this fancy debounce mechanism is needed because the rotary encoder won't work with a normal delay(100)
-    if (nowTime - allButtons[i]->changeTime > 100 && allButtons[i]->prevState != allButtons[i]->state) {
+    if (nowTime - allButtons[i]->changeTime > allButtons[i]->delay && allButtons[i]->prevState != allButtons[i]->state) {
       allButtons[i]->changeTime = nowTime;
       if (allButtons[i]->shouldTrigger()) {
         allButtons[i]->callback();
