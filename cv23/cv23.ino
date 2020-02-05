@@ -1,8 +1,3 @@
-// Hodiny reálného času
-// Teď by jsi na displeji I2C LCD1602 měl vidět správný datum a čas.
-// Email:laskarduino@gmail.com
-// Web:laskarduino.cz
-/*/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/*/
 // připoj knihovny
 #include <LiquidCrystal_I2C.h>
 #include <Time.h>
@@ -11,10 +6,16 @@
 #include <Wire.h>
 // inicializace DS1302
 // nastavení pinů: CE, IO, CLK
-DS1302RTC RTC (10, 11, 12);
+DS1302RTC RTC (8, 9, 10);
 // Inicializovat LCD
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 void setup () {
+   /*  Uncomment below only the very first time you run the program. 
+    Then comment out again and re upload 
+ setTime(13, 25, 00, 22, 12, 2017);   // 23h31m30s on 3Feb2009
+ RTC.set(now());              //set the RTC from the system time
+ RTC.haltRTC(true);     
+ RTC.haltRTC(false);  */ // This starts the clock.  OR it will reset every 5 minutes
   Serial.begin(9600); // spustit sériový monitor na 9600 bps
   lcd.init(); // inicializace lcd
   lcd.backlight(); // zapnout podsvícení
@@ -23,30 +24,24 @@ void setup () {
   delay(500);
   // kontrola oscilace
   lcd.clear();
-  if (RTC.haltRTC())
-    lcd.print("Hodiny zastaveny");
+  if (RTC.haltRTC())    // Check clock oscillation  
+  {
+  Serial.print("Clock stopped!");
+  delay(1000);
+  }
   else
-    lcd.print("Hodiny pracujou");
-  // kontrola write-protection
-  lcd.setCursor(0, 1);
-  if (RTC.writeEN())
-    lcd.print("Zapis povolen");
-  else
-    lcd.print("Zapis zakazan");
-  delay ( 1000 );
-  // nastavení knihovny
-  lcd.clear();
-  lcd.print("RTC Sync");
-  setSyncProvider(RTC.get); // získat čas z RTC
-  if (timeStatus() == timeSet)
-    lcd.print("OK!");
-  else
-    lcd.print("SELHALO!");
-  delay ( 1000 );
-  lcd.clear();
-  // nastavit čas a datum
-  // (hod,min,sec,den,mesic,rok);
-  setTime(22,58,00,26,12,2019);
+  {
+   Serial.println("Clock is working.");
+   delay(1000);
+  }
+  if (RTC.writeEN()){Serial.println("Write allowed.");}   // Check write-protection
+  else  { Serial.println("Write protected."); }
+
+  Serial.print("RTC Sync in Operation");      // Setup Time library  
+  Serial.println(" . . . ");
+  setSyncProvider(RTC.get); // the function to get the time from the RTC
+  if(timeStatus() == timeSet) { Serial.println(" Ok!"); }
+  else { Serial.println(" FAIL!"); } 
 }
 void loop() {
   // zobrazit čas na displeji
